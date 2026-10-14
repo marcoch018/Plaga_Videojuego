@@ -1,27 +1,26 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class MovimientoJugador : MonoBehaviour
 {
     [Header("Configuración")]
     public float velocidad = 5f;
     public float suavizado = 0.1f;
 
-    private Rigidbody2D rb;
-    private Vector2 input;
-    private Vector2 velocidadActual;
+    Rigidbody2D rb;
+    Vector2 input, velocidadActual;
 
-    void Start()
+    void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = 0f;
+        rb.bodyType = RigidbodyType2D.Dynamic;
         rb.freezeRotation = true;
     }
 
     void Update()
     {
-        input.x = Input.GetAxisRaw("Horizontal");
-        input.y = Input.GetAxisRaw("Vertical");
-        input = input.normalized;
+        input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
     }
 
     void FixedUpdate()

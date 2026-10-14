@@ -1,7 +1,7 @@
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-[RequireComponent(typeof(SpriteRenderer))]
+[RequireComponent(typeof(SpriteRenderer), typeof(Rigidbody2D), typeof(Collider2D))]
 public class MovimientoEnemigo : MonoBehaviour
 {
     public enum BehaviorMode { Seeking, Wandering, Combined }
@@ -23,14 +23,30 @@ public class MovimientoEnemigo : MonoBehaviour
     [Header("Vida")]
     public float vidaMaxima = 100f;
     public float vida = 100f;
+    public float danoAlJugador = 10f;
 
+    [Header("Feedback")]
+    public Color colorDano = Color.red;
+    public float tiempoFlash = 0.1f;
+
+    Rigidbody2D rb;
+    SpriteRenderer sr;
     Vector2 velocity;
     float wanderAngle;
-    SpriteRenderer sr;
+    float flashTimer;
 
     void Awake()
     {
+        rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
+
+        rb.gravityScale = 0f;
+        rb.bodyType = RigidbodyType2D.Dynamic;
+        rb.freezeRotation = true;
+
+        var col = GetComponent<Collider2D>();
+        col.isTrigger = false;
+
         wanderAngle = Random.Range(0f, 360f);
     }
 
@@ -38,8 +54,8 @@ public class MovimientoEnemigo : MonoBehaviour
     {
         if (goal == null)
         {
-            GameObject p = GameObject.FindGameObjectWithTag("Player");
-            if (p != null) goal = p.transform;
+            var p = GameObject.FindGameObjectWithTag("Player");
+            if (p) goal = p.transform;
         }
         velocity = Random.insideUnitCircle.normalized * speed;
     }
@@ -59,17 +75,39 @@ public class MovimientoEnemigo : MonoBehaviour
 
         velocity += acc * Time.deltaTime;
         if (velocity.magnitude > speed) velocity = velocity.normalized * speed;
-        transform.position += (Vector3)(velocity * Time.deltaTime);
 
-        if (sr != null && Mathf.Abs(velocity.x) > 0.01f)
-            sr.flipX = velocity.x < 0f;
+        if (sr && Mathf.Abs(velocity.x) > 0.01f) sr.flipX = velocity.x < 0f;
+
+        if (flashTimer > 0f)
+        {
+            flashTimer -= Time.deltaTime;
+            sr.color = Color.Lerp(Color.white, colorDano, flashTimer / tiempoFlash);
+        }
+    }
+
+    void FixedUpdate()
+    {
+        rb.velocity = velocity;
     }
 
     public void RecibirDano(float cantidad)
     {
         if (cantidad <= 0f) return;
         vida = Mathf.Max(0f, vida - cantidad);
-        if (vida <= 0f) Destroy(gameObject);
+        sr.color = colorDano;
+        flashTimer = tiempoFlash;
+
+        if (vida <= 0f)
+        {
+            GameManager.Instancia?.RegistrarBaja();
+            Destroy(gameObject);
+        }
+    }
+
+    void OnCollisionStay2D(Collision2D col)
+    {
+        if (col.gameObject.CompareTag("Player"))
+            col.gameObject.SendMessage("RecibirDano", danoAlJugador, SendMessageOptions.DontRequireReceiver);
     }
 
     Vector2 SeekArrive(Vector3 target)
@@ -77,36 +115,26 @@ public class MovimientoEnemigo : MonoBehaviour
         Vector2 offset = (Vector2)target - (Vector2)transform.position;
         float dist = offset.magnitude;
         if (dist < 0.001f || dist < stoppingDistance) return -velocity;
-
         float targetSpeed = dist < slowRadius ? speed * (dist / slowRadius) : speed;
-        Vector2 desired = offset.normalized * targetSpeed;
-        return ClampForce(desired - velocity);
+        return ClampForce(offset.normalized * targetSpeed - velocity);
     }
 
     Vector2 Wander()
     {
         wanderAngle += Random.Range(-wanderJitter, wanderJitter) * Time.deltaTime;
-
         Vector2 forward = velocity.sqrMagnitude > 0.01f ? velocity.normalized : Vector2.right;
         Vector2 circleCenter = (Vector2)transform.position + forward * wanderDistance;
         Vector2 displacement = new Vector2(Mathf.Cos(wanderAngle * Mathf.Deg2Rad),
                                            Mathf.Sin(wanderAngle * Mathf.Deg2Rad)) * wanderRadius;
         Vector2 target = circleCenter + displacement;
-
-        Vector2 desired = (target - (Vector2)transform.position).normalized * speed;
-        return ClampForce(desired - velocity);
+        return ClampForce((target - (Vector2)transform.position).normalized * speed - velocity);
     }
 
-    Vector2 ClampForce(Vector2 force)
-    {
-        return force.magnitude > maxForce ? force.normalized * maxForce : force;
-    }
+    Vector2 ClampForce(Vector2 f) => f.magnitude > maxForce ? f.normalized * maxForce : f;
 
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, detectionRadius);
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, slowRadius);
+        Gizmos.color = Color.yellow; Gizmos.DrawWireSphere(transform.position, detectionRadius);
+        Gizmos.color = Color.red;    Gizmos.DrawWireSphere(transform.position, slowRadius);
     }
 }

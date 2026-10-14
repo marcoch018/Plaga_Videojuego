@@ -9,12 +9,8 @@ public class PuntoDeSpawn : MonoBehaviour
 
     void Start()
     {
-        InvokeRepeating(nameof(Spawnear), tiempoInicial, intervaloSpawn);
+        if (prefabEnemigo) InvokeRepeating(nameof(Spawnear), tiempoInicial, intervaloSpawn);
     }
 
-    void Spawnear()
-    {
-        if (prefabEnemigo == null) return;
-        Instantiate(prefabEnemigo, transform.position, Quaternion.identity);
-    }
+    void Spawnear() => Instantiate(prefabEnemigo, transform.position, Quaternion.identity);
 }

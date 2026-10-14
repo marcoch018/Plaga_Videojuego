@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public class Proyectil : MonoBehaviour
 {
     [Header("Configuración")]
@@ -7,26 +8,29 @@ public class Proyectil : MonoBehaviour
     public float dano = 25f;
     public float tiempoVida = 3f;
 
-    void Start()
+    void Awake()
     {
-        // Destruye el proyectil después de un tiempo para liberar memoria
-        Destroy(gameObject, tiempoVida);
+        var rb = GetComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.freezeRotation = true;
+
+        var col = GetComponent<Collider2D>();
+        col.isTrigger = true;
     }
 
-    void Update()
+    void Start()
     {
-        // Mueve el proyectil hacia la derecha local (la dirección a la que apunte)
-        transform.Translate(Vector2.right * velocidad * Time.deltaTime);
+        GetComponent<Rigidbody2D>().velocity = transform.right * velocidad;
+        Destroy(gameObject, tiempoVida);
     }
 
     void OnTriggerEnter2D(Collider2D otro)
     {
-        // Verifica si el objeto impactado tiene el script MovimientoEnemigo
-        MovimientoEnemigo enemigo = otro.GetComponent<MovimientoEnemigo>();
-        if (enemigo != null)
+        if (otro.TryGetComponent(out MovimientoEnemigo enemigo))
         {
-            enemigo.RecibirDano(dano); // Llama al método de daño del enemigo
-            Destroy(gameObject); // Destruye el proyectil tras el impacto
+            enemigo.RecibirDano(dano);
+            Destroy(gameObject);
         }
     }
 }

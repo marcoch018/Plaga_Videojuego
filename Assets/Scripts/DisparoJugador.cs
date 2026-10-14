@@ -2,17 +2,16 @@ using UnityEngine;
 
 public class DisparoJugador : MonoBehaviour
 {
-    [Header("Configuración de Disparo")]
+    [Header("Configuración")]
     public GameObject prefabProyectil;
-    public Transform puntoDisparo; // Opcional: El punto exacto de donde sale la bala
+    public Transform puntoDisparo;
     public float cadencia = 0.3f;
-    
-    private float tiempoProximoDisparo = 0f;
+
+    float tiempoProximoDisparo;
 
     void Update()
     {
-        // Click izquierdo del ratón
-        if (Input.GetButtonDown("Fire1") && Time.time >= tiempoProximoDisparo)
+        if (Input.GetButton("Fire1") && Time.time >= tiempoProximoDisparo)
         {
             Disparar();
             tiempoProximoDisparo = Time.time + cadencia;
@@ -23,18 +22,12 @@ public class DisparoJugador : MonoBehaviour
     {
         if (prefabProyectil == null) return;
 
-        // 1. Obtener la posición del ratón en el mundo real 2D
-        Vector3 posicionRaton = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        posicionRaton.z = 0f;
+        Vector3 raton = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        raton.z = 0f;
+        Vector3 origen = puntoDisparo ? puntoDisparo.position : transform.position;
+        Vector2 dir = (raton - origen).normalized;
+        float angulo = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
 
-        // 2. Definir desde dónde sale la bala
-        Vector3 origen = puntoDisparo != null ? puntoDisparo.position : transform.position;
-
-        // 3. Calcular la dirección y el ángulo de rotación
-        Vector2 direccion = (posicionRaton - origen).normalized;
-        float angulo = Mathf.Atan2(direccion.y, direccion.x) * Mathf.Rad2Deg;
-
-        // 4. Instanciar el proyectil con la rotación correcta
         Instantiate(prefabProyectil, origen, Quaternion.Euler(0f, 0f, angulo));
     }
 }
