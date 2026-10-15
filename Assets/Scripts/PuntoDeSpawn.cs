@@ -12,5 +12,15 @@ public class PuntoDeSpawn : MonoBehaviour
         if (prefabEnemigo) InvokeRepeating(nameof(Spawnear), tiempoInicial, intervaloSpawn);
     }
 
-    void Spawnear() => Instantiate(prefabEnemigo, transform.position, Quaternion.identity);
+    void Update()
+    {
+        if (GameManager.Instancia != null && GameManager.Instancia.juegoTerminado)
+            CancelInvoke(nameof(Spawnear));
+    }
+
+    void Spawnear()
+    {
+        if (GameManager.Instancia != null && GameManager.Instancia.juegoTerminado) return;
+        Instantiate(prefabEnemigo, transform.position, Quaternion.identity);
+    }
 }

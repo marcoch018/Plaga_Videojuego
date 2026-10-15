@@ -6,16 +6,38 @@ public class DisparoJugador : MonoBehaviour
     public GameObject prefabProyectil;
     public Transform puntoDisparo;
     public float cadencia = 0.3f;
+    public string nombreArma = "PISTOLA";
+    public int municionMaxima = 30;
 
+    int municionActual;
     float tiempoProximoDisparo;
+
+    void Start()
+    {
+        municionActual = municionMaxima;
+        HUDManager.Instancia?.SetArma(nombreArma);
+        HUDManager.Instancia?.SetMunicion(municionActual, municionMaxima);
+    }
 
     void Update()
     {
-        if (Input.GetButton("Fire1") && Time.time >= tiempoProximoDisparo)
+        if (Input.GetButton("Fire1") && Time.time >= tiempoProximoDisparo && municionActual > 0)
         {
             Disparar();
+            municionActual--;
+            HUDManager.Instancia?.SetMunicion(municionActual, municionMaxima);
             tiempoProximoDisparo = Time.time + cadencia;
         }
+
+        // Recarga automática al soltar el botón si está vacío
+        if (Input.GetButtonUp("Fire1") && municionActual <= 0)
+            Recargar();
+    }
+
+    void Recargar()
+    {
+        municionActual = municionMaxima;
+        HUDManager.Instancia?.SetMunicion(municionActual, municionMaxima);
     }
 
     void Disparar()

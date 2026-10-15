@@ -23,7 +23,10 @@ public class MovimientoEnemigo : MonoBehaviour
     [Header("Vida")]
     public float vidaMaxima = 100f;
     public float vida = 100f;
+
+    [Header("Ataque al jugador")]
     public float danoAlJugador = 10f;
+    public float cooldownDano = 0.8f;
 
     [Header("Feedback")]
     public Color colorDano = Color.red;
@@ -34,6 +37,7 @@ public class MovimientoEnemigo : MonoBehaviour
     Vector2 velocity;
     float wanderAngle;
     float flashTimer;
+    float proximoDanoPermitido;
 
     void Awake()
     {
@@ -62,6 +66,7 @@ public class MovimientoEnemigo : MonoBehaviour
 
     void Update()
     {
+        if (GameManager.Instancia != null && GameManager.Instancia.juegoTerminado) return;
         if (goal == null) return;
 
         Vector2 acc = mode switch
@@ -99,15 +104,27 @@ public class MovimientoEnemigo : MonoBehaviour
 
         if (vida <= 0f)
         {
-            GameManager.Instancia?.RegistrarBaja();
+            HUDManager.Instancia?.AddBaja();
             Destroy(gameObject);
         }
     }
 
     void OnCollisionStay2D(Collision2D col)
     {
-        if (col.gameObject.CompareTag("Player"))
-            col.gameObject.SendMessage("RecibirDano", danoAlJugador, SendMessageOptions.DontRequireReceiver);
+        if (!col.gameObject.CompareTag("Player")) return;
+        if (Time.time < proximoDanoPermitido) return;
+
+        var vida = col.gameObject.GetComponentInParent<VidaJugador>();
+        if (vida == null) vida = col.gameObject.GetComponentInChildren<VidaJugador>();
+        if (vida != null)
+        {
+            vida.RecibirDano(danoAlJugador);
+            proximoDanoPermitido = Time.time + cooldownDano;
+        }
+        else
+        {
+            Debug.LogWarning("El objeto con Tag Player no tiene VidaJugador adjunto.");
+        }
     }
 
     Vector2 SeekArrive(Vector3 target)
