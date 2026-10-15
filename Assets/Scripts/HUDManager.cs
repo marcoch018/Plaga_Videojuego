@@ -17,6 +17,7 @@ public class HUDManager : MonoBehaviour
     public Image barraVidaSuave;
     public Image barraXP;
     public Image indicadorDano;
+    public Image iconoArma;
 
     [Header("Colores de Vida")]
     public Color colorVidaAlta  = new Color(0.55f, 0.80f, 0.35f);
@@ -90,6 +91,15 @@ public class HUDManager : MonoBehaviour
         if (textoArma) textoArma.text = armaActual;
     }
 
+    public void SetIconoArma(Sprite sprite)
+    {
+        if (iconoArma != null)
+        {
+            iconoArma.sprite = sprite;
+            iconoArma.enabled = sprite != null;
+        }
+    }
+
     public void SetMunicion(int actual, int maxima)
     {
         if (textoMunicion) textoMunicion.text = $"{actual:00} <size=60%>/ {maxima:00}</size>";
@@ -99,6 +109,7 @@ public class HUDManager : MonoBehaviour
     {
         if (barraXP) barraXP.fillAmount = Mathf.Clamp01(pct);
     }
+
     public void MostrarDano()
     {
         if (indicadorDano == null) return;
@@ -126,5 +137,28 @@ public class HUDManager : MonoBehaviour
         }
         c.a = 0f;
         indicadorDano.color = c;
+    }
+
+    [Header("Armas UI")]
+    public TMP_Text[] textosArmas;
+    public Image[] fondosArmas;
+
+    [Header("Colores de arma")]
+    public Color colorArmaActiva   = new Color(0.55f, 0.80f, 0.35f);
+    public Color colorArmaInactiva = new Color(0.55f, 0.58f, 0.52f);
+    public Color colorFondoActivo  = new Color(0.05f, 0.15f, 0.05f, 0.9f);
+    public Color colorFondoInactivo= new Color(0.05f, 0.08f, 0.05f, 0.5f);
+
+    public void SetArmaActiva(int index)
+    {
+        if (textosArmas == null) return;
+        for (int i = 0; i < textosArmas.Length; i++)
+        {
+            bool activa = i == index;
+            if (textosArmas[i] != null)
+                textosArmas[i].color = activa ? colorArmaActiva : colorArmaInactiva;
+            if (fondosArmas != null && i < fondosArmas.Length && fondosArmas[i] != null)
+                fondosArmas[i].color = activa ? colorFondoActivo : colorFondoInactivo;
+        }
     }
 }
